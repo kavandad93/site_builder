@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت صفحات - سایت‌ساز حرفه‌ای</title>
+    <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+    <header class="admin-header">
+        <div class="admin-header-content">
+            <div class="logo"><a href="index.html">🚀 <span>Site</span>Builder</a></div>
+            <div class="admin-user">
+                <span id="userDisplay">مدیر</span>
+                <div class="avatar">M</div>
+                <a href="#" onclick="Auth.logout(); return false;" style="color:#c3c4c7; text-decoration:none; font-size:13px;">خروج</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="admin-wrap">
+        <aside class="admin-sidebar">
+            <a href="index.html" class="menu-item"><span class="icon">📊</span><span>پیشخوان</span></a>
+            <a href="posts.html" class="menu-item"><span class="icon">📝</span><span>مطالب</span></a>
+            <a href="pages.html" class="menu-item active"><span class="icon">📄</span><span>صفحات</span></a>
+            <a href="category.html" class="menu-item"><span class="icon">🏷️</span><span>دسته‌بندی‌ها</span></a>
+            <a href="media.html" class="menu-item"><span class="icon">🖼️</span><span>رسانه</span></a>
+            <a href="users.html" class="menu-item"><span class="icon">👤</span><span>کاربران</span></a>
+            <a href="builder.html" class="menu-item"><span class="icon">🧩</span><span>سازنده صفحه</span></a>
+            <div class="menu-divider"></div>
+            <a href="settings.html" class="menu-item"><span class="icon">⚙️</span><span>تنظیمات</span></a>
+            <a href="../index.html" class="menu-item" target="_blank"><span class="icon">🌐</span><span>مشاهده سایت</span></a>
+        </aside>
+
+        <main class="admin-main">
+            <div class="top-bar">
+                <h1>📄 مدیریت صفحات</h1>
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="showAddModal()">➕ صفحه جدید</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>لیست صفحات</h2>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>عنوان</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead>
+                        <tbody id="pagesTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="pageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:12px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto; padding:30px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--border);">
+                <h3 id="modalTitle">صفحه جدید</h3>
+                <button onclick="closeModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--gray);">&times;</button>
+            </div>
+            <form id="pageForm" onsubmit="savePage(event)">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label>عنوان</label>
+                    <input type="text" id="pageTitle" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>محتوا</label>
+                    <textarea id="pageContent" class="form-control" rows="6"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>وضعیت</label>
+                    <select id="pageStatus" class="form-control">
+                        <option value="draft">پیش‌نویس</option>
+                        <option value="published">منتشر شده</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">لغو</button>
+                    <button type="submit" class="btn btn-success">💾 ذخیره</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../assets/js/database.js"></script>
+    <script src="../assets/js/auth.js"></script>
+    <script>
+        if (!Auth.isLoggedIn()) window.location.href = 'login.html';
+        
+        const user = Auth.getCurrentUser();
+        if (user) document.getElementById('userDisplay').textContent = user.display_name || user.username;
+
+        function loadPages() {
+            const pages = DB.get(DB.keys.pages).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+            const tbody = document.getElementById('pagesTable');
+            
+            if (pages.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--gray);">هیچ صفحه‌ای یافت نشد</td></tr>`;
+                return;
+            }
+            
+            tbody.innerHTML = pages.map(page => {
+                const statusClass = page.status === 'published' ? 'published' : 'draft';
+                const statusLabel = page.status === 'published' ? 'منتشر شده' : 'پیش‌نویس';
+                return `<tr>
+                    <td><strong>${page.title}</strong></td>
+                    <td><span class="status ${statusClass}">${statusLabel}</span></td>
+                    <td>${new Date(page.created_at).toLocaleDateString('fa-IR')}</td>
+                    <td>
+                        <button class="btn btn-sm" onclick="editPage(${page.id})">✏️</button>
+                        <button class="btn btn-sm btn-danger" onclick="deletePage(${page.id})">🗑️</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function showAddModal() {
+            document.getElementById('modalTitle').textContent = 'صفحه جدید';
+            document.getElementById('editId').value = '';
+            document.getElementById('pageTitle').value = '';
+            document.getElementById('pageContent').value = '';
+            document.getElementById('pageStatus').value = 'draft';
+            document.getElementById('pageModal').style.display = 'flex';
+        }
+
+        function editPage(id) {
+            const page = DB.getById(DB.keys.pages, id);
+            if (!page) return;
+            document.getElementById('modalTitle').textContent = 'ویرایش صفحه';
+            document.getElementById('editId').value = id;
+            document.getElementById('pageTitle').value = page.title;
+            document.getElementById('pageContent').value = page.content;
+            document.getElementById('pageStatus').value = page.status;
+            document.getElementById('pageModal').style.display = 'flex';
+        }
+
+        function savePage(e) {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const data = {
+                title: document.getElementById('pageTitle').value.trim(),
+                content: document.getElementById('pageContent').value,
+                status: document.getElementById('pageStatus').value,
+                author_id: Auth.getCurrentUser().id,
+                slug: document.getElementById('pageTitle').value.trim().replace(/ /g, '-')
+            };
+            
+            if (id) {
+                DB.update(DB.keys.pages, parseInt(id), data);
+            } else {
+                DB.create(DB.keys.pages, data);
+            }
+            
+            closeModal();
+            loadPages();
+            alert('✅ صفحه با موفقیت ذخیره شد!');
+        }
+
+        function deletePage(id) {
+            if (confirm('آیا از حذف این صفحه اطمینان دارید؟')) {
+                DB.delete(DB.keys.pages, id);
+                loadPages();
+                alert('🗑️ صفحه حذف شد!');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('pageModal').style.display = 'none';
+        }
+
+        loadPages();
+    </script>
+</body>
+</html>

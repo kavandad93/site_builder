@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تنظیمات - سایت‌ساز حرفه‌ای</title>
+    <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+    <header class="admin-header">
+        <div class="admin-header-content">
+            <div class="logo"><a href="index.html">🚀 <span>Site</span>Builder</a></div>
+            <div class="admin-user">
+                <span id="userDisplay">مدیر</span>
+                <div class="avatar">M</div>
+                <a href="#" onclick="Auth.logout(); return false;" style="color:#c3c4c7; text-decoration:none; font-size:13px;">خروج</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="admin-wrap">
+        <aside class="admin-sidebar">
+            <a href="index.html" class="menu-item"><span class="icon">📊</span><span>پیشخوان</span></a>
+            <a href="posts.html" class="menu-item"><span class="icon">📝</span><span>مطالب</span></a>
+            <a href="pages.html" class="menu-item"><span class="icon">📄</span><span>صفحات</span></a>
+            <a href="category.html" class="menu-item"><span class="icon">🏷️</span><span>دسته‌بندی‌ها</span></a>
+            <a href="media.html" class="menu-item"><span class="icon">🖼️</span><span>رسانه</span></a>
+            <a href="users.html" class="menu-item"><span class="icon">👤</span><span>کاربران</span></a>
+            <a href="builder.html" class="menu-item"><span class="icon">🧩</span><span>سازنده صفحه</span></a>
+            <div class="menu-divider"></div>
+            <a href="settings.html" class="menu-item active"><span class="icon">⚙️</span><span>تنظیمات</span></a>
+            <a href="../index.html" class="menu-item" target="_blank"><span class="icon">🌐</span><span>مشاهده سایت</span></a>
+        </aside>
+
+        <main class="admin-main">
+            <div class="top-bar">
+                <h1>⚙️ تنظیمات</h1>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>تنظیمات کلی</h2>
+                </div>
+                <form id="settingsForm" onsubmit="saveSettings(event)">
+                    <div class="form-group">
+                        <label>عنوان سایت</label>
+                        <input type="text" id="siteTitle" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>توضیحات سایت</label>
+                        <textarea id="siteDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>تعداد مطالب در صفحه</label>
+                        <input type="number" id="postsPerPage" class="form-control" min="1" max="50">
+                    </div>
+                    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+                        <button type="submit" class="btn btn-success">💾 ذخیره تنظیمات</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="../assets/js/database.js"></script>
+    <script src="../assets/js/auth.js"></script>
+    <script>
+        if (!Auth.isLoggedIn()) window.location.href = 'login.html';
+        
+        const user = Auth.getCurrentUser();
+        if (user) document.getElementById('userDisplay').textContent = user.display_name || user.username;
+
+        function loadSettings() {
+            const settings = DB.get(DB.keys.settings);
+            document.getElementById('siteTitle').value = settings.site_title || '';
+            document.getElementById('siteDescription').value = settings.site_description || '';
+            document.getElementById('postsPerPage').value = settings.posts_per_page || 6;
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            const data = {
+                site_title: document.getElementById('siteTitle').value.trim(),
+                site_description: document.getElementById('siteDescription').value.trim(),
+                posts_per_page: parseInt(document.getElementById('postsPerPage').value) || 6
+            };
+            DB.set(DB.keys.settings, data);
+            alert('✅ تنظیمات با موفقیت ذخیره شد!');
+        }
+
+        loadSettings();
+    </script>
+</body>
+</html>
